@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  db:
+    image: mysql:8.0
+    container_name: rm_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: monitoring
+      MYSQL_USER: monitoring
+      MYSQL_PASSWORD: monitoring_pass
+    ports:
+      - "3306:3306"
+    command: ["mysqld", "--mysql-native-password=ON", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7
+    container_name: rm_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
