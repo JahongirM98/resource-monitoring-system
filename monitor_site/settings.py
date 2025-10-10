@@ -139,4 +139,8 @@ CELERY_BEAT_SCHEDULE = {
         "task": "monitoring.tasks.schedule_fetch_all",
         "schedule": crontab(minute="*/15"),
     },
+    "evaluate-incidents-every-5-min": {
+        "task": "monitoring.tasks.evaluate_incidents_all",
+        "schedule": crontab(minute="*/5"),
+    },
 }
