@@ -19,3 +19,9 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
+  redis:
+    image: redis:7
+    container_name: rm_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"   # если занят порт 6379, поставь "6380:6379" и обнови .env
