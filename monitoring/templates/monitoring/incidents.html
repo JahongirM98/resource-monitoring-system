@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Incidents</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: system-ui, sans-serif; margin:0; background:#0b132b; color:#e5e7eb; }
+    header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:#1c2541; position:sticky; top:0; }
+    .muted { color:#94a3b8; font-size:14px; }
+    .wrap { padding: 16px 20px; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding:10px 12px; border-bottom:1px solid #23395b; }
+    th { text-align:left; color:#94a3b8; font-weight:600; }
+    tr:hover { background:#16213e; }
+    .badge { padding:3px 8px; border-radius:999px; font-size:12px; font-weight:700; display:inline-block; }
+    .ok { background:#0f766e33; color:#34d399; }
+    .bad { background:#7f1d1d33; color:#f87171; }
+    .type { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; }
+    .pill { background:#3a506b; color:#e5e7eb; border-radius:999px; padding:4px 8px; font-size:12px; }
+    .btn { color:#e5e7eb; text-decoration:none; border:1px solid #3a506b; padding:6px 10px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div style="font-weight:700">Инциденты</div>
+      <div class="muted" id="subtitle">Обновление — …</div>
+    </div>
+    <nav>
+      <a class="btn" href="/logout">Выйти</a>
+    </nav>
+  </header>
+
+  <div class="wrap">
+    <div style="margin-bottom:10px">
+      <span class="pill" id="summary">Всего: 0 • Активных: 0</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Машина</th><th>Тип</th><th>Статус</th><th>Начало</th><th>Последний раз</th><th>Закрыт</th>
+        </tr>
+      </thead>
+      <tbody id="rows">
+        <tr><td colspan="7" class="muted">Загрузка…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const rows = document.getElementById('rows');
+    const subtitle = document.getElementById('subtitle');
+    const summary = document.getElementById('summary');
+
+    function fmt(t){ if(!t) return '—'; const d=new Date(t); return d.toLocaleString(); }
+    function badge(active){ return active ? '<span class="badge bad">ACTIVE</span>' : '<span class="badge ok">RESOLVED</span>'; }
+    function typeLabel(t){ return `<span class="type">${t}</span>`; }
+
+    async function load() {
+      try {
+        const r = await fetch('/api/incidents/json', { cache:'no-store' });
+        const j = await r.json();
+        const act = j.items.filter(x=>x.is_active).length;
+        summary.textContent = `Всего: ${j.count} • Активных: ${act}`;
+        subtitle.textContent = 'Обновление — ' + new Date().toLocaleTimeString();
+
+        if (j.items.length === 0) {
+          rows.innerHTML = '<tr><td colspan="7" class="muted">Нет инцидентов за последние 24 часа</td></tr>';
+          return;
+        }
+        rows.innerHTML = j.items.map(i => `
+          <tr>
+            <td>${i.id}</td>
+            <td>${i.machine}</td>
+            <td>${typeLabel(i.type)}</td>
+            <td>${badge(i.is_active)}</td>
+            <td>${fmt(i.started_at)}</td>
+            <td>${fmt(i.last_seen_at)}</td>
+            <td>${fmt(i.resolved_at)}</td>
+          </tr>
+        `).join('');
+      } catch(e) {
+        subtitle.textContent = 'Ошибка загрузки (' + e + ')';
+      }
+    }
+
+    load();
+    setInterval(load, 10000); // авто-обновление раз в 10 сек
+  </script>
+</body>
+</html>
