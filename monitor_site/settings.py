@@ -10,23 +10,29 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 from environs import Env
 from celery.schedules import crontab
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = Env()
-env.read_env((BASE_DIR / ".env"))
+env_file = BASE_DIR / ".env"
+if env_file.exists():
+    env.read_env(env_file)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env("SECRET_KEY")
+# поддерживаем оба имени переменной: DJANGO_SECRET_KEY ИЛИ SECRET_KEY
+SECRET_KEY = env.str("DJANGO_SECRET_KEY", None) or env.str("SECRET_KEY", None)
+if not SECRET_KEY:
+    raise ImproperlyConfigured("SECRET_KEY (or DJANGO_SECRET_KEY) is not set")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool("DEBUG", False)
+# аналогично для DEBUG
+DEBUG = env.bool("DJANGO_DEBUG", env.bool("DEBUG", False))
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", ["*"])
 
@@ -124,7 +130,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
